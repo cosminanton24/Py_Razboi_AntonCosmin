@@ -5,30 +5,29 @@ from .card import Card
 class Player:
     def __init__(self, name: str) -> None:
         self.name = name
-        # Coada de cărți ale jucătorului (pile de joc)
         self.pile: deque[Card] = deque()
 
     def has_cards(self) -> bool:
-        """True dacă jucătorul mai are cărți."""
+        """true if player has cards left."""
         return len(self.pile) > 0
 
     def card_count(self) -> int:
-        """Numărul de cărți pe care le are jucătorul."""
+        """number of cards of player"""
         return len(self.pile)
 
     def draw_card(self) -> Card | None:
         """
-        Trage o carte din fața cozii (vârful pilonului).
-        Întoarce None dacă nu mai sunt cărți.
+        draw a card from the front of the queue (top of the pile).
+        Returns None if no cards left.
         """
         if self.pile:
             return self.pile.popleft()
         return None
 
     def add_cards_to_bottom(self, cards: list[Card]) -> None:
-        """Adaugă o listă de cărți la baza pilonului."""
+        """Adds a list of cards to the bottom of the pile."""
         self.pile.extend(cards)
 
     def clear(self) -> None:
-        """Golește complet pilonul de cărți."""
+        """empties the player's pile."""
         self.pile.clear()
