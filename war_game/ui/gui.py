@@ -12,64 +12,233 @@ class WarGameApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("War - Card Game")
+        self.root.minsize(520, 520)
 
         self.engine = GameEngine(war_face_down_count=3)
         self.engine.reset_game()
 
-        # Animation / flow control
+        # Flow control
         self.is_busy = False
 
         # Timing (ms)
-        self.DELAY_DRAW = 600
+        self.DELAY_DRAW = 650
         self.DELAY_COMPARE = 450
-        self.DELAY_WAR_START = 550
-        self.DELAY_WAR_DOWN = 650
-        self.DELAY_WAR_UP = 650
-        self.DELAY_AWARD = 800
+        self.DELAY_WAR_START = 600
+        self.DELAY_WAR_DOWN = 700
+        self.DELAY_WAR_UP = 700
+        self.DELAY_AWARD = 900
 
-        # CPU
-        self.cpu_title = tk.Label(root, text="CPU", font=("Arial", 14, "bold"))
-        self.cpu_title.pack(pady=(10, 0))
+        # Simple theme
+        self.bg = "#0f172a"     
+        self.panel = "#111827"   
+        self.card_bg = "#0b1220" 
+        self.text = "#e5e7eb"    
+        self.muted = "#9ca3af"   
 
-        self.cpu_down_label = tk.Label(root, text="", font=("Arial", 14))
-        self.cpu_down_label.pack(pady=(2, 0))
+        self.root.configure(bg=self.bg)
 
-        self.cpu_card_label = tk.Label(root, text="--", font=("Arial", 32))
-        self.cpu_card_label.pack(pady=5)
+        #top title
+        title = tk.Label(
+            root,
+            text="WAR",
+            font=("Arial", 22, "bold"),
+            bg=self.bg,
+            fg=self.text
+        )
+        title.pack(pady=(14, 6))
 
-        # Player
-        self.player_title = tk.Label(root, text="PLAYER", font=("Arial", 14, "bold"))
-        self.player_title.pack(pady=(10, 0))
+        subtitle = tk.Label(
+            root,
+            text="Player vs CPU",
+            font=("Arial", 11),
+            bg=self.bg,
+            fg=self.muted
+        )
+        subtitle.pack(pady=(0, 10))
 
-        self.player_down_label = tk.Label(root, text="", font=("Arial", 14))
-        self.player_down_label.pack(pady=(2, 0))
+        #main board 
+        self.board = tk.Frame(root, bg=self.bg)
+        self.board.pack(fill="both", expand=True, padx=16, pady=10)
 
-        self.player_card_label = tk.Label(root, text="--", font=("Arial", 32))
-        self.player_card_label.pack(pady=5)
+        #CPU area
+        self.cpu_area = self._build_player_area(self.board, "CPU")
+        self.cpu_area.pack(fill="x", pady=(0, 12))
 
-        # Status / scores
-        self.status_label = tk.Label(root, text="Press Play", font=("Arial", 12))
-        self.status_label.pack(pady=6)
+        #Center status area
+        self.center_area = tk.Frame(self.board, bg=self.panel, bd=0, highlightthickness=0)
+        self.center_area.pack(fill="x", pady=(0, 12))
 
-        self.pot_label = tk.Label(root, text="", font=("Arial", 12))
-        self.pot_label.pack(pady=2)
+        self._build_center_area(self.center_area)
 
-        self.score_label = tk.Label(root, text="", font=("Arial", 12))
-        self.score_label.pack(pady=4)
+        #Player area
+        self.player_area = self._build_player_area(self.board, "PLAYER")
+        self.player_area.pack(fill="x")
 
-        # Buttons
-        self.play_button = tk.Button(root, text="Play", command=self.on_play)
-        self.play_button.pack(pady=6)
+        #Bottom controls
+        self.controls = tk.Frame(root, bg=self.bg)
+        self.controls.pack(fill="x", padx=16, pady=(10, 14))
 
-        self.restart_button = tk.Button(root, text="Restart", command=self.on_restart)
-        self.restart_button.pack(pady=(0, 10))
+        self.play_button = tk.Button(
+            self.controls,
+            text="Play",
+            command=self.on_play,
+            font=("Arial", 12, "bold"),
+            padx=16,
+            pady=8
+        )
+        self.play_button.pack(side="left")
+
+        self.restart_button = tk.Button(
+            self.controls,
+            text="Restart",
+            command=self.on_restart,
+            font=("Arial", 12),
+            padx=16,
+            pady=8
+        )
+        self.restart_button.pack(side="left", padx=(10, 0))
+
+        self.score_label = tk.Label(
+            self.controls,
+            text="",
+            font=("Arial", 12),
+            bg=self.bg,
+            fg=self.text
+        )
+        self.score_label.pack(side="right")
+
+        # Map labels for easy update
+        self.cpu_card_label = self.cpu_area.card_label
+        self.cpu_down_label = self.cpu_area.down_label
+
+        self.player_card_label = self.player_area.card_label
+        self.player_down_label = self.player_area.down_label
 
         self.refresh_scores()
         self.refresh_pot()
+        self._push_log("New game. Press Play.")
+
+        # Button states
+        self._apply_button_style(self.play_button, primary=True)
+        self._apply_button_style(self.restart_button, primary=False)
+
+    #ui builders
+
+    def _build_player_area(self, parent: tk.Widget, name: str) -> tk.Frame:
+        frame = tk.Frame(parent, bg=self.panel, padx=14, pady=12)
+        frame.configure(highlightthickness=0)
+
+        header = tk.Frame(frame, bg=self.panel)
+        header.pack(fill="x")
+
+        name_label = tk.Label(
+            header,
+            text=name,
+            font=("Arial", 13, "bold"),
+            bg=self.panel,
+            fg=self.text
+        )
+        name_label.pack(side="left")
+
+        down_label = tk.Label(
+            frame,
+            text="",
+            font=("Consolas", 12),
+            bg=self.panel,
+            fg=self.muted
+        )
+        down_label.pack(anchor="w", pady=(8, 6))
+
+        # Card slot
+        slot = tk.Frame(
+            frame,
+            bg=self.card_bg,
+            bd=0,
+            highlightbackground="#334155",
+            highlightthickness=2,
+            padx=10,
+            pady=10
+        )
+        slot.pack(fill="x")
+
+        card_label = tk.Label(
+            slot,
+            text="--",
+            font=("Arial", 36, "bold"),
+            bg=self.card_bg,
+            fg=self.text
+        )
+        card_label.pack()
+
+        # Attach for easy access
+        frame.down_label = down_label
+        frame.card_label = card_label
+        return frame
+
+    def _build_center_area(self, parent: tk.Widget) -> None:
+        parent.configure(padx=14, pady=12, bg=self.panel)
+
+        top = tk.Frame(parent, bg=self.panel)
+        top.pack(fill="x")
+
+        self.pot_label = tk.Label(
+            top,
+            text="Pot: 0",
+            font=("Arial", 12, "bold"),
+            bg=self.panel,
+            fg=self.text
+        )
+        self.pot_label.pack(side="left")
+
+        self.status_label = tk.Label(
+            top,
+            text="",
+            font=("Arial", 12),
+            bg=self.panel,
+            fg=self.muted
+        )
+        self.status_label.pack(side="right")
+
+        # Log box
+        self.log_box = tk.Text(
+            parent,
+            height=5,
+            wrap="word",
+            font=("Consolas", 10),
+            bg=self.card_bg,
+            fg=self.text,
+            bd=0,
+            highlightthickness=2,
+            highlightbackground="#334155"
+        )
+        self.log_box.pack(fill="x", pady=(10, 0))
+        self.log_box.config(state="disabled")
+
+    def _apply_button_style(self, btn: tk.Button, primary: bool) -> None:
+        if primary:
+            btn.configure(
+                bg="#2563eb",
+                fg="white",
+                activebackground="#1d4ed8",
+                activeforeground="white",
+                relief="flat",
+                bd=0
+            )
+        else:
+            btn.configure(
+                bg="#374151",
+                fg="white",
+                activebackground="#4b5563",
+                activeforeground="white",
+                relief="flat",
+                bd=0
+            )
+
+    #UI helpers
 
     def refresh_scores(self) -> None:
         p, c = self.engine.get_scores()
-        self.score_label.config(text=f"Cards - Player: {p} | CPU: {c}")
+        self.score_label.config(text=f"Cards  Player: {p}   CPU: {c}")
 
     def refresh_pot(self) -> None:
         self.pot_label.config(text=f"Pot: {len(self.engine.pot)}")
@@ -83,32 +252,41 @@ class WarGameApp:
         if busy:
             self.play_button.config(state=tk.DISABLED)
         else:
-            # Only enable if game not over
             if self.engine.state == "game_over":
                 self.play_button.config(state=tk.DISABLED)
             else:
                 self.play_button.config(state=tk.NORMAL)
 
+    def _push_log(self, line: str) -> None:
+        self.log_box.config(state="normal")
+        content = self.log_box.get("1.0", "end").strip().splitlines()
+        if content == [""]:
+            content = []
+        content.append(line)
+        content = content[-5:]
+
+        self.log_box.delete("1.0", "end")
+        self.log_box.insert("1.0", "\n".join(content) + "\n")
+        self.log_box.config(state="disabled")
+        self.log_box.see("end")
+
+    #Game flow
+
     def on_play(self) -> None:
         if self.is_busy:
             return
         if self.engine.state == "game_over":
-            self.status_label.config(text="Game over. Press Restart.")
+            self.status_label.config(text="Game over.")
             self.play_button.config(state=tk.DISABLED)
             return
 
         self.set_busy(True)
-        # Start a full round animation sequence
         self._animate_round_step()
 
     def _animate_round_step(self) -> None:
-        """
-        Runs engine.next_step() and schedules the next step based on the returned action/state.
-        Continues until round ends (engine.state becomes idle) or game over.
-        """
         result = self.engine.next_step()
 
-        # Update cards shown for draw and war_up
+        # Update cards on draw and war_up
         if result.action in ("draw", "war_up"):
             if result.player_card is not None:
                 self.player_card_label.config(text=str(result.player_card))
@@ -125,26 +303,28 @@ class WarGameApp:
             self.clear_face_down()
 
         # Status + counters
-        self.status_label.config(text=result.message)
+        self.status_label.config(text=result.action.upper())
         self.refresh_scores()
         self.refresh_pot()
 
+        # Log messages
+        if result.message:
+            self._push_log(result.message)
+
         # Stop conditions
         if result.game_over or self.engine.state == "game_over":
-            self.status_label.config(text="Game over. Press Restart.")
+            self._push_log("Game over. Press Restart.")
+            self.status_label.config(text="GAME OVER")
             self.set_busy(False)
             self.play_button.config(state=tk.DISABLED)
             return
 
         if self.engine.state == "idle":
-            # Round fully finished
+            # Round finished
             self.set_busy(False)
             return
 
-        # Decide delay for the next scheduled step
         delay = self._delay_for_action(result.action)
-
-        # Schedule next step
         self.root.after(delay, self._animate_round_step)
 
     def _delay_for_action(self, action: str) -> int:
@@ -160,22 +340,27 @@ class WarGameApp:
             return self.DELAY_WAR_UP
         if action == "award":
             return self.DELAY_AWARD
-        # default
         return 500
 
     def on_restart(self) -> None:
         if self.is_busy:
-            # ignore restart during animation (minimal safeguard)
             return
 
         self.engine.reset_game()
         self.cpu_card_label.config(text="--")
         self.player_card_label.config(text="--")
         self.clear_face_down()
-        self.status_label.config(text="New game. Press Play.")
+        self.status_label.config(text="READY")
         self.refresh_scores()
         self.refresh_pot()
-        self.play_button.config(text="Play", state=tk.NORMAL)
+
+        # Clear log
+        self.log_box.config(state="normal")
+        self.log_box.delete("1.0", "end")
+        self.log_box.config(state="disabled")
+        self._push_log("New game. Press Play.")
+
+        self.play_button.config(state=tk.NORMAL)
 
 
 def run_app() -> None:
