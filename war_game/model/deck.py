@@ -8,14 +8,9 @@ class Deck:
         self.cards = [Card(rank, suit) for suit in SUITS for rank in RANKS]
 
     def shuffle(self) -> None:
-        """Shuffles the deck."""
         random.shuffle(self.cards)
 
     def draw(self) -> Card | None:
-        """
-        Draws a card from the top of the deck.
-        Returns None if no cards left.
-        """
         if self.cards:
             # Consider the "top" as the end of the list
             return self.cards.pop()
