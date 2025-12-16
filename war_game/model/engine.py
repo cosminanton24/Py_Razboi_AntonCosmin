@@ -23,22 +23,7 @@ class StepResult:
 
 
 class GameEngine:
-    """
-    Step-based War engine for UI visualization.
-
-    Flow:
-    - next_step() drives the round in multiple UI-visible steps:
-      draw -> compare -> (if tie) war_start -> war_down -> war_up -> compare -> ...
-      -> award pot -> round_over -> idle
-
-    War:
-    - Each tie triggers war:
-      N face-down (as many as possible) then 1 face-up (if possible).
-    - If someone cannot place the face-up card during war, they lose the pot.
-    - Chained wars are handled by looping back to war_start.
-    """
-
-    def __init__(self, war_face_down_count: int = 3) -> None:
+def __init__(self, war_face_down_count: int = 3) -> None:
         self.war_face_down_count = war_face_down_count
         self.player = Player("You")
         self.cpu = Player("CPU")
@@ -81,10 +66,6 @@ class GameEngine:
         return self.state != "idle" and self.state != "game_over"
 
     def next_step(self) -> StepResult:
-        """
-        Advances the game by one visual step.
-        Call repeatedly from UI (Play/Next) to visualize wars.
-        """
         if self.state == "game_over" or self.is_game_over():
             self.state = "game_over"
             return StepResult(
